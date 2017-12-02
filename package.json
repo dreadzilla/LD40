@@ -1,0 +1,16 @@
+{
+  "name": "ld38",
+  "version": "1.0.0",
+  "description": "LD38 Small World game",
+  "main": "app.js",
+  "dependencies": {
+        "express": "^4.15.2",
+        "socket.io": "^1.7.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "node app.js"
+  },
+  "author": "Hakan Staby",
+  "license": "ISC"
+}
