@@ -1,7 +1,7 @@
 // Init and remove
 var initPack = {player:[],bullet:[],enemy:[]};
 var removePack = {player:[],bullet:[],enemy:[]};
-var collDist = 32; //Collision distance
+var collDist = 24; //Collision distance
 var maxSpawnAmount = 2; // How many spawns per user allowed
 
 // Entity class
@@ -105,9 +105,6 @@ Player = function(param){
 				self.shootBullet(self.mouseAngle)
 				self.broadcastHit('gun');
 			}
-			//for (var i = -3; i<3;i++)
-			//	self.shootBullet(i*10+self.mouseAngle);
-
 		}
 	}
 	self.shootBullet = function(angle){
@@ -162,6 +159,7 @@ Player = function(param){
 			hp: self.hp,
 			hpMax: self.hpMax,
 			score: self.score,
+      username: self.username,
 		};
 	}
 	self.getUpdatePack = function(){
@@ -171,6 +169,7 @@ Player = function(param){
 			y: self.y,
 			hp: self.hp,
 			score: self.score,
+      username: self.username,
 		};
 	}
 	Player.list[self.id] = self;
@@ -210,7 +209,7 @@ Player.onConnect = function(socket,username){
 	socket.emit('init', {
 		selfId:socket.id, //refer player
 		player:Player.getAllInitPack(),
-		bullets:Bullet.getAllInitPack(),
+		bullet:Bullet.getAllInitPack(),
     enemy:Enemy.getAllInitPack(),
 	})
 	// Broadcast new player.
@@ -396,30 +395,7 @@ Enemy = function(param){
 				self.shootBullet(self.mouseAngle)
 				self.broadcastHit('gun');
 			}
-			//for (var i = -3; i<3;i++)
-			//	self.shootBullet(i*10+self.mouseAngle);
 		}
-    // for(var i in Player.list){
-    //   var p = Player.list[i];
-    //   if(self.getDistance(p) < collDist && self.parent !== p.id){
-    //     // Handle possible collision here
-    //     p.hp -= 1;
-    //     self.broadcastHit('enemyhit'); //Send audio
-    //     if (p.hp <= 0){
-    //       self.broadcastHit('enemykill');
-    //       self.score += 1;
-    //       // Broadcast kill.
-    //       for (var i in SOCKET_LIST){
-    //         SOCKET_LIST[i].emit('addToChat',self.username+' killed '+p.username
-    //         +'. What a loser! :) --'+ self.username+ '\'s score is now: '+self.score);
-    //       }
-    //       p.hp = p.hpMax;
-    //       p.x = Math.random() * MAPWIDTH;
-    //       p.y = Math.random() * MAPHEIGHT;
-    //     }
-    //     self.toRemove=true;
-    //   }
-    // }
 	}
 	self.shootBullet = function(angle){
 		Bullet({

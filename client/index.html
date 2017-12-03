@@ -120,7 +120,7 @@
          ];
 
   var ctx = document.getElementById('ctx').getContext("2d");
-  ctx.font = '25px Arial';
+  ctx.font = '20px Arial';
 
   var Player = function(initPack){
     var self = {};
@@ -131,6 +131,7 @@
     self.hp = initPack.hp;
     self.hpMax = initPack.hpMax;
     self.score = initPack.score;
+    self.username = initPack.username;
 
     self.draw = function(){
       var x = self.x - Player.list[selfId].x + WIDTH/2;
@@ -138,9 +139,13 @@
       var hpWidth = 30 * self.hp / self.hpMax;
       ctx.fillStyle = 'red';
       ctx.fillRect(x - hpWidth/2, y - 40,hpWidth,4); // HP
+      // ctx.font = '15px Arial';
+      // ctx.fillStyle = 'black';
+      // ctx.textAlign="center";
+      // ctx.fillText(Player.list[selfId].username,x,y-17); // name tag
 
-      var width = Img.player.width*2; //player
-      var height = Img.player.height*2;
+      var width = Img.player.width*1; //player
+      var height = Img.player.height*1;
 
       ctx.drawImage(Img.player,
         0,0,Img.player.width,Img.player.height,
@@ -234,6 +239,8 @@
           p.hp = pack.hp;
         if(pack.score !== undefined)
           p.score = pack.score;
+        // if(pack.username !== undefined)
+        //   p.username = pack.username;
       }
     }
     for(var i = 0 ; i < data.enemy.length; i++){
@@ -297,8 +304,14 @@
 	},40);
 
   var drawScore = function() {
+
+    // ctx.font = '20px Arial';
     ctx.fillStyle = 'black';
+    // ctx.textAlign="left";
+
     ctx.fillText('Score: ' + Player.list[selfId].score,10,30);
+    ctx.fillText('Move spd: ' + Player.list[selfId].score,10,50);
+    ctx.fillText('Shoot spd: ' + Player.list[selfId].score,10,70);
   }
 
   // var drawMap = function() {
