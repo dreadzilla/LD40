@@ -39,6 +39,8 @@
 <script>
   var WIDTH = 1000;
   var HEIGHT = 600;
+  var TILEWIDTH = 64;
+  var TILEHEIGHT = 64;
   var socket = io();
   //var screenSize = 500;
   //signin
@@ -83,6 +85,8 @@
   Img.player.src = '/client/img/player.png'; // 24x24 pixels
   Img.bullet = new Image();
   Img.bullet.src = '/client/img/bullet.png'; // 48x48 pixels
+  Img.enemy = new Image();
+  Img.enemy.src = '/client/img/enemy.png'; // 48x48 pixels
   Img.map = {};
   Img.map[1] = new Image();
   Img.map[1].src = '/client/img/1.png';
@@ -102,11 +106,17 @@
   Snd.enemykill = new Audio();
   Snd.enemykill.src = '/client/sound/playerexplosion.wav';
 
-  var map = [
-          [2,2,2,2,2,2,2,2,2,2],  /// use numbers instead of strings here
-          [2,1,1,1,1,3,1,1,1,2],
-          [2,1,1,1,1,3,1,1,1,2],
-          [2,2,2,2,2,2,2,2,2,2]
+  var mapArray = [
+          [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],  /// use numbers instead of strings here
+          [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
+          [2,1,1,1,1,1,1,1,1,1,3,1,1,1,1,2],
+          [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
+          [2,1,1,1,1,1,3,1,1,1,1,1,1,1,1,2],
+          [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
+          [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
+          [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
+          [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
+          [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
          ];
 
   var ctx = document.getElementById('ctx').getContext("2d");
@@ -291,25 +301,33 @@
     ctx.fillText('Score: ' + Player.list[selfId].score,10,30);
   }
 
+  // var drawMap = function() {
+  //   var player = Player.list[selfId];
+  //   var x = WIDTH/2 - player.x;
+  //   var y = HEIGHT/2 - player.y;
+  //   ctx.drawImage(Img.map,x,y);
+  // }
+
   var drawMap = function() {
     var player = Player.list[selfId];
-    var x = WIDTH/2 - player.x;
-    var y = HEIGHT/2 - player.y;
-    ctx.drawImage(Img.map[1],x,y);
-  }
+    var startx = WIDTH/2 - player.x;
+    var starty = HEIGHT/2 - player.y;
+    var x = startx;
+    var y = starty;
+    // console.log('x:'+x+' y:'+y);
+    for (var i = 0; i < mapArray.length; i++) {
+      for (var j = 0; j < mapArray[i].length ; j++){
+        ctx.drawImage(Img.map[mapArray[i][j]], x, y);
+        x+=TILEWIDTH;
+        // if (x > mapArray.length*TILEWIDTH) {
+        //   x=startx;
+        // }
+      }
+      x=startx;
+      y+=TILEHEIGHT;
+    }
 
-//   var drawMap = function() {
-//     var x = 0;
-//     var y = 0;
-//     /// loop and get map index
-//     for (var i = 0; i < map.length; i++) {
-//       for (var j = 0; j < map[i].length ; j++){
-//         ctx.drawImage(Img.map[map[i][j]], x, y, 64, 64);
-//       }
-//       x+=64;
-//     }
-//     y+=64;
-// }
+}
 
   // Check for user keypresses
   document.onkeydown = function(event){
