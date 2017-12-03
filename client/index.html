@@ -2,22 +2,23 @@
 <!-- Author: Hakan Staby, 2017-Apr-24 -->
 
 <div id="signDiv" style="margin:20;">
-  <h1>Lord of the Flies!</h1>An LD38 entry.
+  <h1>Return of the Evil Veg!</h1>An LD40 entry.
   <p>
   Enter name to begin: <input id="signDiv-username" type="text"></input>
   <button id="signDiv-signIn">Sign In</button>
   </p>
   <p>
-    You are stuck on a small island and must fight for survival.<br>
-    Kill everyone else to score points.<br>
+    The last stand between the Veggies and Fruits takes place in a small clearing in the forest .<br>
+    Kill everyone and everything else to score points.<br>
     W,A,S,D to move around. Mouse to aim and shoot.<br>
-    One point for each kill.<br>
+    Other players give more points than vegetables.<br>
+    Each time you score, something gets worse...<br>
     This is a multiplayer online game.
   </p>
 </div>
 
 <div id="gameDiv" style="display:none;margin:auto;">
-  <canvas id="ctx" width="1000" height="600" style="border:1px solid #000000;background:#3F92FF;"></canvas>
+  <canvas id="ctx" width="1000" height="600" style="border:1px solid #000000;background:#010101;"></canvas>
 
   <div id="chat-text" style="width:1000px;height:100px;overflow-y:scroll;">
     <div>Welcome to Lord of the Flies!! Shoot to kill!</div>
@@ -86,16 +87,16 @@
   Img.bullet = new Image();
   Img.bullet.src = '/client/img/bullet_sb.png'; // 48x48 pixels
   Img.enemy = new Image();
-  Img.enemy.src = '/client/img/enemy_aubergine_2.png'; // 48x48 pixels
-  Img.map = {};
-  Img.map[1] = new Image();
-  Img.map[1].src = '/client/img/1.png';
-  Img.map[2] = new Image();
-  Img.map[2].src = '/client/img/2.png';
-  Img.map[3] = new Image();
-  Img.map[3].src = '/client/img/3.png';
-  // Img.map = new Image();
-  // Img.map.src = '/client/img/map.png';
+  Img.enemy.src = '/client/img/enemy_aubergine.png'; // 48x48 pixels
+  // Img.map = {};
+  // Img.map[1] = new Image();
+  // Img.map[1].src = '/client/img/1.png';
+  // Img.map[2] = new Image();
+  // Img.map[2].src = '/client/img/2.png';
+  // Img.map[3] = new Image();
+  // Img.map[3].src = '/client/img/3.png';
+  Img.map = new Image();
+  Img.map.src = '/client/img/battleback1.png';
 
   // Sound!
   var Snd = {};
@@ -106,18 +107,18 @@
   Snd.enemykill = new Audio();
   Snd.enemykill.src = '/client/sound/fallingdown.wav';
 
-  var mapArray = [
-          [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],  /// use numbers instead of strings here
-          [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
-          [2,1,1,1,1,1,1,1,1,1,3,1,1,1,1,2],
-          [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
-          [2,1,1,1,1,1,3,1,1,1,1,1,1,1,1,2],
-          [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
-          [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
-          [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
-          [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
-          [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
-         ];
+  // var mapArray = [
+  //         [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],  /// use numbers instead of strings here
+  //         [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
+  //         [2,1,1,1,1,1,1,1,1,1,3,1,1,1,1,2],
+  //         [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
+  //         [2,1,1,1,1,1,3,1,1,1,1,1,1,1,1,2],
+  //         [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
+  //         [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
+  //         [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
+  //         [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
+  //         [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
+  //        ];
 
   var ctx = document.getElementById('ctx').getContext("2d");
   ctx.font = '20px Arial';
@@ -239,6 +240,8 @@
           p.hp = pack.hp;
         if(pack.score !== undefined)
           p.score = pack.score;
+        if(pack.atkSpd !== undefined)
+          p.atkSpd = pack.atkSpd;
         // if(pack.username !== undefined)
         //   p.username = pack.username;
       }
@@ -304,43 +307,44 @@
 	},40);
 
   var drawScore = function() {
-
-    // ctx.font = '20px Arial';
     ctx.fillStyle = 'black';
-    // ctx.textAlign="left";
-
     ctx.fillText('Score: ' + Player.list[selfId].score,10,30);
     ctx.fillText('Move spd: ' + Player.list[selfId].score,10,50);
-    ctx.fillText('Shoot spd: ' + Player.list[selfId].score,10,70);
+    ctx.fillText('Shoot spd: ' + Player.list[selfId].atkSpd*5,10,70);
+    ctx.fillStyle = 'white';
+    ctx.fillText('Score: ' + Player.list[selfId].score,11,31);
+    ctx.fillText('Move spd: ' + Player.list[selfId].score,11,51);
+    ctx.fillText('Shoot spd: ' + Player.list[selfId].atkSpd*5,11,71);
+    ctx.fillStyle = 'black';
   }
-
-  // var drawMap = function() {
-  //   var player = Player.list[selfId];
-  //   var x = WIDTH/2 - player.x;
-  //   var y = HEIGHT/2 - player.y;
-  //   ctx.drawImage(Img.map,x,y);
-  // }
-
+  // Simple map background
   var drawMap = function() {
     var player = Player.list[selfId];
-    var startx = WIDTH/2 - player.x;
-    var starty = HEIGHT/2 - player.y;
-    var x = startx;
-    var y = starty;
-    // console.log('x:'+x+' y:'+y);
-    for (var i = 0; i < mapArray.length; i++) {
-      for (var j = 0; j < mapArray[i].length ; j++){
-        ctx.drawImage(Img.map[mapArray[i][j]], x, y);
-        x+=TILEWIDTH;
-        // if (x > mapArray.length*TILEWIDTH) {
-        //   x=startx;
-        // }
-      }
-      x=startx;
-      y+=TILEHEIGHT;
-    }
-
-}
+    var x = WIDTH/2 - player.x;
+    var y = HEIGHT/2 - player.y;
+    ctx.drawImage(Img.map,x,y,WIDTH,HEIGHT);
+  }
+    // Tiled map draw - below
+//   var drawMap = function() {
+//     var player = Player.list[selfId];
+//     var startx = WIDTH/2 - player.x;
+//     var starty = HEIGHT/2 - player.y;
+//     var x = startx;
+//     var y = starty;
+//     // console.log('x:'+x+' y:'+y);
+//     // Draw tiled map
+//     for (var i = 0; i < mapArray.length; i++) {
+//       for (var j = 0; j < mapArray[i].length ; j++){
+//         ctx.drawImage(Img.map[mapArray[i][j]], x, y);
+//         x+=TILEWIDTH;
+//         // if (x > mapArray.length*TILEWIDTH) {
+//         //   x=startx;
+//         // }
+//       }
+//       x=startx;
+//       y+=TILEHEIGHT;
+//     }
+// }
 
   // Check for user keypresses
   document.onkeydown = function(event){

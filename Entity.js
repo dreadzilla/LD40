@@ -3,6 +3,8 @@ var initPack = {player:[],bullet:[],enemy:[]};
 var removePack = {player:[],bullet:[],enemy:[]};
 var collDist = 24; //Collision distance
 var maxSpawnAmount = 2; // How many spawns per user allowed
+var killplayerscore = 5;
+var killvegscore = 1;
 
 // Entity class
 Entity = function(param) {
@@ -84,12 +86,14 @@ Player = function(param){
 	self.pressingDown = false,
 	self.pressingAttack = false,
 	self.mouseAngle = 0,
-	self.maxSpd = 10,
+	self.maxSpd = 5,
 	self.hp = 10,
 	self.hpMax = 10,
 	self.score = 0,
 	self.attackctr = 0, // keep check on attack speed.
-	self.atkSpd = 1
+	self.atkSpd = 0.4,
+  self.maxAtkSpd = 2,
+  self.bullSpd = 5
 
 	var super_update = self.update;
 	// will call both updateSpd and the Player update.
@@ -100,7 +104,7 @@ Player = function(param){
 		// Create bullet
 		if (self.pressingAttack){
 			self.attackctr += self.atkSpd; // restrain shooting speed
-			if(self.attackctr > 3){
+			if(self.attackctr > 4){
 				self.attackctr = 0;
 				self.shootBullet(self.mouseAngle)
 				self.broadcastHit('gun');
@@ -113,6 +117,7 @@ Player = function(param){
 			angle:angle,
 			x:self.x,
 			y:self.y,
+      bullSpd:self.bullSpd,
 		});
 	}
 
@@ -121,14 +126,14 @@ Player = function(param){
 		// Borders are hard coded now.
 		//console.log(self.x);
 		if(self.pressingRight){
-			if (self.x < MAPWIDTH)
+			if (self.x < MAPWIDTH - collDist)
 				self.spdX = self.maxSpd;
 			else {
 				self.spdX = 0;
 			}
 		}
 		else if(self.pressingLeft){
-			if (self.x > 30)
+			if (self.x > collDist)
 				self.spdX = -self.maxSpd;
 			else
 				self.spdX = 0;
@@ -136,13 +141,13 @@ Player = function(param){
 		else
 			self.spdX = 0;
 		if(self.pressingUp){
-			if(self.y > 30)
+			if(self.y > collDist)
 				self.spdY = -self.maxSpd;
 			else
 				self.spdY = 0;
 		}
 		else if(self.pressingDown){
-			if(self.y < MAPHEIGHT)
+			if(self.y < MAPHEIGHT - collDist)
 				self.spdY = self.maxSpd;
 			else
 				self.spdY = 0;
@@ -160,6 +165,7 @@ Player = function(param){
 			hpMax: self.hpMax,
 			score: self.score,
       username: self.username,
+      atkSpd: self.atkSpd,
 		};
 	}
 	self.getUpdatePack = function(){
@@ -170,6 +176,7 @@ Player = function(param){
 			hp: self.hp,
 			score: self.score,
       username: self.username,
+      atkSpd: self.atkSpd,
 		};
 	}
 	Player.list[self.id] = self;
@@ -247,8 +254,8 @@ Bullet = function(param){
     var self = Entity(param);
     self.id = Math.random();
 		self.angle = param.angle;
-    self.spdX = Math.cos(param.angle/180*Math.PI) * 10;
-    self.spdY = Math.sin(param.angle/180*Math.PI) * 10;
+    self.spdX = Math.cos(param.angle/180*Math.PI) * param.bullSpd;
+    self.spdY = Math.sin(param.angle/180*Math.PI) * param.bullSpd;
 		self.parent = param.parent;
     self.timer = 0;
     self.toRemove = false;
@@ -269,13 +276,19 @@ Bullet = function(param){
 						self.broadcastHit('enemykill');
 						var shooter = Player.list[self.parent];
 						if(shooter) {
-							shooter.score += 1;
+							shooter.score += killplayerscore; // Give score for killing other player
+              // Broadcast kill.
+  						for (var i in SOCKET_LIST){
+  							SOCKET_LIST[i].emit('addToChat',shooter.username+' killed '+p.username
+  							+'. What a loser! :) --'+ shooter.username+ '\'s score is now: '+shooter.score);
+  						}
+						} else {
+              // Broadcast kill.
+  						for (var i in SOCKET_LIST){
+  							SOCKET_LIST[i].emit('addToChat',p.username+' was killed by a Veggie. What a loser! :) --');
+  						}
 						}
-						// Broadcast kill.
-						for (var i in SOCKET_LIST){
-							SOCKET_LIST[i].emit('addToChat',shooter.username+' killed '+p.username
-							+'. What a loser! :) --'+ shooter.username+ '\'s score is now: '+shooter.score);
-						}
+
             // Recreate player with full health and at random position
 						p.hp = p.hpMax;
 						p.x = Math.random() * MAPWIDTH;
@@ -295,12 +308,23 @@ Bullet = function(param){
 						self.broadcastHit('enemykill');
 						var shooter = Player.list[self.parent];
 						if(shooter) {
-							shooter.score += 1;
-						}
-						// Broadcast kill.
-						for (var i in SOCKET_LIST){
-							SOCKET_LIST[i].emit('addToChat',shooter.username+' killed '+p.username);
-						}
+							shooter.score += killvegscore;
+              if (shooter.atkSpd >= shooter.maxAtkSpd) {
+                shooter.atkSpd = shooter.maxAtkSpd;
+              } else {
+                shooter.atkSpd = Math.round((shooter.atkSpd + 0.2) * 100) / 100;
+              }
+              // Broadcast kill.
+  						for (var i in SOCKET_LIST){
+  							SOCKET_LIST[i].emit('addToChat',shooter.username+' killed '+p.username);
+  						}
+						} else {
+              // Broadcast kill.
+  						for (var i in SOCKET_LIST){
+  							SOCKET_LIST[i].emit('addToChat',p.username+' killed '+p.username);
+  						}
+            }
+
             p.toRemove=true;
             // Recreate enemy with full health and at random position
 						// p.hp = p.hpMax;
@@ -377,9 +401,11 @@ Enemy = function(param){
 	self.hpMax = 10,
 	self.score = 0,
 	self.attackctr = 0, // keep check on attack speed.
-	self.atkSpd = 1,
+	self.atkSpd = 0.1,
   self.collDist = 24,
-  self.playerfav = param.playerid
+  self.playerfav = param.playerid,
+  self.bullSpd = 2,
+  self.maxAtkSpd = 2
 
 	var super_update = self.update;
 	// will call both updateSpd and the Enemy update.
@@ -390,7 +416,7 @@ Enemy = function(param){
 		// Create bullet
 		if (self.pressingAttack){
 			self.attackctr += self.atkSpd; // restrain shooting speed
-			if(self.attackctr > 3){
+			if(self.attackctr > 4){
 				self.attackctr = 0;
 				self.shootBullet(self.mouseAngle)
 				self.broadcastHit('gun');
@@ -399,17 +425,20 @@ Enemy = function(param){
 	}
   self.updateKeyPress = function(){
     var player = Player.list[self.playerfav];
+    // console.log('Player: ' + player);
     //console.log('Player idfav:'+self.playerfav);
-    var diffX = player.x - self.x;
-		var diffY = player.y - self.y;
+    if (player !== undefined) {
+      var diffX = player.x - self.x;
+  		var diffY = player.y - self.y;
 
-		self.pressingRight = diffX > self.collDist;
-		self.pressingLeft = diffX < -self.collDist;
-		self.pressingDown = diffY > self.collDist;
-		self.pressingUp = diffY < -self.collDist;
-
+  		self.pressingRight = diffX > self.collDist;
+  		self.pressingLeft = diffX < -self.collDist;
+  		self.pressingDown = diffY > self.collDist;
+  		self.pressingUp = diffY < -self.collDist;
+      self.pressingAttack = Math.random() >= 0.7; // Randomly press attack. Also depends on attackctr above.
+      self.mouseAngle = Math.atan2(diffY,diffX) / Math.PI * 180;
+    }
 	}
-
 
 	self.shootBullet = function(angle){
 		Bullet({
@@ -417,6 +446,7 @@ Enemy = function(param){
 			angle:angle,
 			x:self.x,
 			y:self.y,
+      bullSpd:self.bullSpd,
 		});
 	}
 
@@ -424,14 +454,14 @@ Enemy = function(param){
 		// Add map collision here. The enemy can't travel farther than the map
 		// Borders are hard coded now.
 		if(self.pressingRight){
-			if (self.x < 770)
+			if (self.x < MAPWIDTH - self.collDist)
 				self.spdX = self.maxSpd;
 			else {
 				self.spdX = 0;
 			}
 		}
 		else if(self.pressingLeft){
-			if (self.x > 30)
+			if (self.x > self.collDist)
 				self.spdX = -self.maxSpd;
 			else
 				self.spdX = 0;
@@ -439,13 +469,13 @@ Enemy = function(param){
 		else
 			self.spdX = 0;
 		if(self.pressingUp){
-			if(self.y > 30)
+			if(self.y > self.collDist)
 				self.spdY = -self.maxSpd;
 			else
 				self.spdY = 0;
 		}
 		else if(self.pressingDown){
-			if(self.y < 550)
+			if(self.y < MAPHEIGHT-self.collDist)
 				self.spdY = self.maxSpd;
 			else
 				self.spdY = 0;
@@ -498,7 +528,7 @@ Enemy.spawnEnemy = function(){
     console.log('will spawn enemy no: '+ Object.keys(Enemy.list).length);
     // Announce the arrival of enemy!
   	for (var i in SOCKET_LIST){
-  		SOCKET_LIST[i].emit('addToChat',' A terrible '+username+' materializes from the nether.');
+  		SOCKET_LIST[i].emit('addToChat',' A terrible '+username+' materializes from the ground.');
   	}
   }
   //console.log('called spawnEnemy:' + Object.keys(Player.list).length);
