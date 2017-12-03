@@ -121,7 +121,7 @@ Player = function(param){
 		// Borders are hard coded now.
 		//console.log(self.x);
 		if(self.pressingRight){
-			if (self.x < 770)
+			if (self.x < MAPWIDTH)
 				self.spdX = self.maxSpd;
 			else {
 				self.spdX = 0;
@@ -142,7 +142,7 @@ Player = function(param){
 				self.spdY = 0;
 		}
 		else if(self.pressingDown){
-			if(self.y < 550)
+			if(self.y < MAPHEIGHT)
 				self.spdY = self.maxSpd;
 			else
 				self.spdY = 0;
@@ -299,8 +299,7 @@ Bullet = function(param){
 						}
 						// Broadcast kill.
 						for (var i in SOCKET_LIST){
-							SOCKET_LIST[i].emit('addToChat',shooter.username+' killed '+p.username
-							+'. What a loser! :) --');
+							SOCKET_LIST[i].emit('addToChat',shooter.username+' killed '+p.username);
 						}
             p.toRemove=true;
             // Recreate enemy with full health and at random position
@@ -373,20 +372,21 @@ Enemy = function(param){
 	self.pressingDown = false,
 	self.pressingAttack = false,
 	self.mouseAngle = 0,
-	self.maxSpd = 10,
+	self.maxSpd = 1,
 	self.hp = 10,
 	self.hpMax = 10,
 	self.score = 0,
 	self.attackctr = 0, // keep check on attack speed.
 	self.atkSpd = 1,
-  self.collDist = 24
+  self.collDist = 24,
+  self.playerfav = param.playerid
 
 	var super_update = self.update;
 	// will call both updateSpd and the Enemy update.
 	self.update = function() {
 		self.updateSpd();
 		super_update();
-
+    self.updateKeyPress();
 		// Create bullet
 		if (self.pressingAttack){
 			self.attackctr += self.atkSpd; // restrain shooting speed
@@ -397,6 +397,20 @@ Enemy = function(param){
 			}
 		}
 	}
+  self.updateKeyPress = function(){
+    var player = Player.list[self.playerfav];
+    //console.log('Player idfav:'+self.playerfav);
+    var diffX = player.x - self.x;
+		var diffY = player.y - self.y;
+
+		self.pressingRight = diffX > self.collDist;
+		self.pressingLeft = diffX < -self.collDist;
+		self.pressingDown = diffY > self.collDist;
+		self.pressingUp = diffY < -self.collDist;
+
+	}
+
+
 	self.shootBullet = function(angle){
 		Bullet({
 			parent:self.id,
@@ -409,7 +423,6 @@ Enemy = function(param){
 	self.updateSpd = function(){
 		// Add map collision here. The enemy can't travel farther than the map
 		// Borders are hard coded now.
-		//console.log(self.x);
 		if(self.pressingRight){
 			if (self.x < 770)
 				self.spdX = self.maxSpd;
@@ -468,20 +481,21 @@ Enemy = function(param){
 Enemy.list = {};
 Enemy.spawnEnemy = function(){
   // Spawn enemies only if fewer than allowed
-  if (Object.keys(Player.list).length * maxSpawnAmount >= Object.keys(Enemy.list).length) {
-    console.log('will spawn enemy');
-    var username = 'Monster';
+  if (Object.keys(Player.list).length * maxSpawnAmount > Object.keys(Enemy.list).length) {
+    var username = 'Veggie';
     var x = Math.random() * MAPWIDTH;
     var y = Math.random() * MAPHEIGHT
-    // Recreate enemy with full health and at random position
-    // e.hp = p.hpMax;
-    // e.x = Math.random() * MAPWIDTH;
-    // e.y = Math.random() * MAPHEIGHT;
+    // Designate a favourite player for the enemy. It is ranndom and unfair :)
+    var keys = Object.keys(Player.list);
+    var playerid = Player.list[keys[ keys.length * Math.random() << 0]].id;
+    //console.log('playerid: ' + playerid);
     var enemy = Enemy({
   		username:username,
       x:x,
       y:y,
+      playerid:playerid,
   	});
+    console.log('will spawn enemy no: '+ Object.keys(Enemy.list).length);
     // Announce the arrival of enemy!
   	for (var i in SOCKET_LIST){
   		SOCKET_LIST[i].emit('addToChat',' A terrible '+username+' materializes from the nether.');

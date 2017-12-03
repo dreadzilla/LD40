@@ -82,11 +82,11 @@
   //game
   var Img = {};
   Img.player = new Image();
-  Img.player.src = '/client/img/player.png'; // 24x24 pixels
+  Img.player.src = '/client/img/player_strawberry.png'; // 24x24 pixels
   Img.bullet = new Image();
-  Img.bullet.src = '/client/img/bullet.png'; // 48x48 pixels
+  Img.bullet.src = '/client/img/bullet_sb.png'; // 48x48 pixels
   Img.enemy = new Image();
-  Img.enemy.src = '/client/img/enemy.png'; // 48x48 pixels
+  Img.enemy.src = '/client/img/enemy_aubergine_2.png'; // 48x48 pixels
   Img.map = {};
   Img.map[1] = new Image();
   Img.map[1].src = '/client/img/1.png';
@@ -104,7 +104,7 @@
   Snd.gun = new Audio();
   Snd.gun.src = '/client/sound/gun.wav';
   Snd.enemykill = new Audio();
-  Snd.enemykill.src = '/client/sound/playerexplosion.wav';
+  Snd.enemykill.src = '/client/sound/fallingdown.wav';
 
   var mapArray = [
           [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],  /// use numbers instead of strings here
@@ -174,8 +174,8 @@
       ctx.fillStyle = 'red';
       ctx.fillRect(x - hpWidth/2, y - 40,hpWidth,4); // HP
 
-      var width = Img.enemy.width*1; //enemy
-      var height = Img.enemy.height*1;
+      var width = Img.enemy.width*0.5; //enemy
+      var height = Img.enemy.height*0.5;
 
       ctx.drawImage(Img.enemy,
         0,0,Img.enemy.width,Img.enemy.height,
