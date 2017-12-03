@@ -2,6 +2,7 @@
 var initPack = {player:[],bullet:[],enemy:[]};
 var removePack = {player:[],bullet:[],enemy:[]};
 var collDist = 32; //Collision distance
+var maxSpawnAmount = 2; // How many spawns per user allowed
 
 // Entity class
 Entity = function(param) {
@@ -300,12 +301,13 @@ Bullet = function(param){
 						// Broadcast kill.
 						for (var i in SOCKET_LIST){
 							SOCKET_LIST[i].emit('addToChat',shooter.username+' killed '+p.username
-							+'. What a loser! :) --'+ shooter.username+ '\'s score is now: '+shooter.score);
+							+'. What a loser! :) --');
 						}
-            // Recreate player with full health and at random position
-						p.hp = p.hpMax;
-						p.x = Math.random() * MAPWIDTH;
-						p.y = Math.random() * MAPHEIGHT;
+            p.toRemove=true;
+            // Recreate enemy with full health and at random position
+						// p.hp = p.hpMax;
+						// p.x = Math.random() * MAPWIDTH;
+						// p.y = Math.random() * MAPHEIGHT;
 					}
 					self.toRemove=true;
 				}
@@ -362,8 +364,8 @@ Bullet.update = function(){
 Enemy = function(param){
 	var self = Entity(param);
   // Spawn location
-  self.x = 100;
-  self.y = 100;
+  self.x = param.x;
+  self.y = param.y;
 	self.username = param.username;
 	self.id = Math.random();
 	self.pressingRight = false,
@@ -397,27 +399,27 @@ Enemy = function(param){
 			//for (var i = -3; i<3;i++)
 			//	self.shootBullet(i*10+self.mouseAngle);
 		}
-    for(var i in Player.list){
-      var p = Player.list[i];
-      if(self.getDistance(p) < collDist && self.parent !== p.id){
-        // Handle possible collision here
-        p.hp -= 1;
-        self.broadcastHit('enemyhit'); //Send audio
-        if (p.hp <= 0){
-          self.broadcastHit('enemykill');
-          self.score += 1;
-          // Broadcast kill.
-          for (var i in SOCKET_LIST){
-            SOCKET_LIST[i].emit('addToChat',self.username+' killed '+p.username
-            +'. What a loser! :) --'+ self.username+ '\'s score is now: '+self.score);
-          }
-          p.hp = p.hpMax;
-          p.x = Math.random() * MAPWIDTH;
-          p.y = Math.random() * MAPHEIGHT;
-        }
-        //self.toRemove=true;
-      }
-    }
+    // for(var i in Player.list){
+    //   var p = Player.list[i];
+    //   if(self.getDistance(p) < collDist && self.parent !== p.id){
+    //     // Handle possible collision here
+    //     p.hp -= 1;
+    //     self.broadcastHit('enemyhit'); //Send audio
+    //     if (p.hp <= 0){
+    //       self.broadcastHit('enemykill');
+    //       self.score += 1;
+    //       // Broadcast kill.
+    //       for (var i in SOCKET_LIST){
+    //         SOCKET_LIST[i].emit('addToChat',self.username+' killed '+p.username
+    //         +'. What a loser! :) --'+ self.username+ '\'s score is now: '+self.score);
+    //       }
+    //       p.hp = p.hpMax;
+    //       p.x = Math.random() * MAPWIDTH;
+    //       p.y = Math.random() * MAPHEIGHT;
+    //     }
+    //     self.toRemove=true;
+    //   }
+    // }
 	}
 	self.shootBullet = function(angle){
 		Bullet({
@@ -488,42 +490,28 @@ Enemy = function(param){
 }
 
 Enemy.list = {};
-Enemy.spawnEnemy = function(username){
-	var enemy = Enemy({
-		username:username,
-	});
-
-	// socket.on('keyPress',function(data){
-	// 	if(data.inputId === 'left')
-	// 		player.pressingLeft = data.state;
-	// 	else if(data.inputId === 'right')
-	// 		player.pressingRight = data.state;
-	// 	else if(data.inputId === 'up')
-	// 		player.pressingUp = data.state;
-	// 	else if(data.inputId === 'down')
-	// 		player.pressingDown = data.state;
-	// 	else if(data.inputId === 'attack')
-	// 		player.pressingAttack = data.state;
-	// 	else if(data.inputId === 'mouseAngle')
-	// 		player.mouseAngle = data.state;
-	// });
-	// Send chats out.
-	// socket.on('sendMsgToServer',function(data){
-	// 	for (var i in SOCKET_LIST){
-	// 		SOCKET_LIST[i].emit('addToChat',enemy.username+': '+data);
-	// 	}
-	// });
-	// Initialize player stuff
-	// socket.emit('init', {
-	// 	selfId:socket.id, //refer player
-	// 	player:Player.getAllInitPack(),
-	// 	bullets:Bullet.getAllInitPack(),
-  //   enemy:Enemy.getAllInitPack(),
-	// })
-	// Broadcast new enemy.
-	for (var i in SOCKET_LIST){
-		SOCKET_LIST[i].emit('addToChat',' The terrible '+enemy.username+' materializes from the nether.');
-	}
+Enemy.spawnEnemy = function(){
+  // Spawn enemies only if fewer than allowed
+  if (Object.keys(Player.list).length * maxSpawnAmount >= Object.keys(Enemy.list).length) {
+    console.log('will spawn enemy');
+    var username = 'Monster';
+    var x = Math.random() * MAPWIDTH;
+    var y = Math.random() * MAPHEIGHT
+    // Recreate enemy with full health and at random position
+    // e.hp = p.hpMax;
+    // e.x = Math.random() * MAPWIDTH;
+    // e.y = Math.random() * MAPHEIGHT;
+    var enemy = Enemy({
+  		username:username,
+      x:x,
+      y:y,
+  	});
+    // Announce the arrival of enemy!
+  	for (var i in SOCKET_LIST){
+  		SOCKET_LIST[i].emit('addToChat',' A terrible '+username+' materializes from the nether.');
+  	}
+  }
+  //console.log('called spawnEnemy:' + Object.keys(Player.list).length);
 }
 Enemy.getAllInitPack = function(){
 	var enemies = [];
@@ -545,6 +533,9 @@ Enemy.update = function(){
       pack.push(enemy.getUpdatePack());
     }
 	}
+
 	return pack;
 }
-// End Player class
+
+
+// End Enemy class

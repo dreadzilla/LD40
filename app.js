@@ -10,6 +10,7 @@ var DEBUG = true;
 MAPWIDTH = 1000;
 MAPHEIGHT = 600;
 SOCKET_LIST = {};
+var frameCount = 0;
 
 // Redirect to start file if /
 app.get('/',function(req, res) {
@@ -41,7 +42,7 @@ io.sockets.on('connection', function(socket){
 		isValidPassword(data,function(res){
 	  	if(res){
 	    	Player.onConnect(socket,data.username);
-				Enemy.spawnEnemy('Killer Bob'); // Spawn an enemy when the player logs in
+				// Enemy.spawnEnemy('Killer Bob'); // Spawn an enemy when the player logs in
 	      socket.emit('signInResponse',{success:true});
 			} else {
 	     	socket.emit('signInResponse',{success:false});
@@ -75,11 +76,8 @@ io.sockets.on('connection', function(socket){
 	});
 });
 
-
 // SERVER GAME LOOP
 // Servertick 25 times per second
-
-
 setInterval(function(){
 	var packs = Entity.getFrameUpdateData();
 	for(var i in SOCKET_LIST){
@@ -88,5 +86,10 @@ setInterval(function(){
 		socket.emit('update',packs.updatePack);
 		socket.emit('remove',packs.removePack);
 	}
-
+	frameCount++;
+	if (frameCount %100 === 0){ // Spawn every 4 seconds
+		// console.log('SpawnEnemy');
+		Enemy.spawnEnemy();
+		frameCount = 0;
+	}
 },1000/25);
