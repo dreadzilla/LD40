@@ -239,6 +239,22 @@ Player.getAllInitPack = function(){
 }
 // Remove disconnected player
 Player.onDisconnect = function(socket){
+	// Remove possible enemies connected to this player
+	if (Player.list[socket.id] !== undefined){
+		// console.log('Player id:'+socket.id);
+		// console.log('Player id:'+Player.list[socket.id].username);
+		for(var i in Enemy.list){
+			if (Enemy.list[i].playerfav === socket.id){
+				// console.log('remove enemy ' + Enemy.list[i].playerfav);
+				Enemy.list[i].toRemove = true;
+			}
+		}
+		// Broadcast new player.
+		for (var i in SOCKET_LIST){
+			SOCKET_LIST[i].emit('addToChat',Player.list[socket.id].username+': left the server.');
+		}
+	}
+	// Remove player from list
 	delete Player.list[socket.id];
 	removePack.player.push(socket.id);
 }
@@ -284,6 +300,9 @@ Bullet = function(param){
 						var shooter = Player.list[self.parent];
 						if(shooter) {
 							shooter.score += killplayerscore; // Give score for killing other player
+							if (shooter.score > shooter.highscore) {
+	              shooter.highscore = shooter.score;
+	            }
               // Broadcast kill.
   						for (var i in SOCKET_LIST){
   							SOCKET_LIST[i].emit('addToChat',shooter.username+' killed '+p.username
@@ -325,6 +344,9 @@ Bullet = function(param){
 						var shooter = Player.list[self.parent];
 						if(shooter) {
 							shooter.score += killvegscore;
+							if (shooter.score > shooter.highscore) {
+	              shooter.highscore = shooter.score;
+	            }
               if (shooter.atkSpd >= shooter.maxAtkSpd) {
                 shooter.atkSpd = shooter.maxAtkSpd;
               } else {
@@ -445,7 +467,7 @@ Enemy = function(param){
 			if(self.attackctr > 4){
 				self.attackctr = 0;
 				self.shootBullet(self.mouseAngle)
-				self.broadcastHit('gun');
+				self.broadcastHit('gunau');
 			}
 		}
 	}
