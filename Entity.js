@@ -90,10 +90,13 @@ Player = function(param){
 	self.hp = 10,
 	self.hpMax = 10,
 	self.score = 0,
-	self.attackctr = 0, // keep check on attack speed.
+  self.highscore = 0,
+	self.attackctr = 4, // keep check on attack speed.
 	self.atkSpd = 0.4,
   self.maxAtkSpd = 2,
-  self.bullSpd = 5
+  self.bullSpd = 5,
+  self.bullImg = 0,
+  self.enemyAtkSpeed = 0.1
 
 	var super_update = self.update;
 	// will call both updateSpd and the Player update.
@@ -118,6 +121,7 @@ Player = function(param){
 			x:self.x,
 			y:self.y,
       bullSpd:self.bullSpd,
+      imgid:self.bullImg,
 		});
 	}
 
@@ -164,6 +168,7 @@ Player = function(param){
 			hp: self.hp,
 			hpMax: self.hpMax,
 			score: self.score,
+      highscore: self.highscore,
       username: self.username,
       atkSpd: self.atkSpd,
 		};
@@ -175,6 +180,7 @@ Player = function(param){
 			y: self.y,
 			hp: self.hp,
 			score: self.score,
+      highscore: self.highscore,
       username: self.username,
       atkSpd: self.atkSpd,
 		};
@@ -258,7 +264,8 @@ Bullet = function(param){
     self.spdY = Math.sin(param.angle/180*Math.PI) * param.bullSpd;
 		self.parent = param.parent;
     self.timer = 0;
-    self.toRemove = false;
+    self.toRemove = false,
+    self.imgid = param.imgid; // 0 is default image
 		// Override update loop
     var super_update = self.update;
     self.update = function(){
@@ -273,7 +280,7 @@ Bullet = function(param){
 					p.hp -= 1;
 					self.broadcastHit('enemyhit'); //Send audio
 					if (p.hp <= 0){
-						self.broadcastHit('enemykill');
+						self.broadcastHit('playerkill');
 						var shooter = Player.list[self.parent];
 						if(shooter) {
 							shooter.score += killplayerscore; // Give score for killing other player
@@ -288,11 +295,20 @@ Bullet = function(param){
   							SOCKET_LIST[i].emit('addToChat',p.username+' was killed by a Veggie. What a loser! :) --');
   						}
 						}
-
+            SOCKET_LIST[p.id].emit('addToChat',' You were killed! Your settings will be reset.');
             // Recreate player with full health and at random position
 						p.hp = p.hpMax;
 						p.x = Math.random() * MAPWIDTH;
 						p.y = Math.random() * MAPHEIGHT;
+            // Reset variables
+            maxSpawnAmount = 2;
+            p.enemyAtkSpeed = 0.1;
+            p.atkSpd = 0.4;
+            if (p.score > p.highscore) {
+              p.highscore = p.score;
+              SOCKET_LIST[p.id].emit('addToChat','--- A NEW HIGHSCORE --- : ' + p.highscore);
+            }
+            p.score = 0;
 					}
 					self.toRemove=true;
 				}
@@ -314,9 +330,16 @@ Bullet = function(param){
               } else {
                 shooter.atkSpd = Math.round((shooter.atkSpd + 0.2) * 100) / 100;
               }
+              if (shooter.enemyAtkSpeed >= shooter.maxAtkSpd) { // restrict enemy shooting speed
+                shooter.enemyAtkSpeed = shooter.maxAtkSpd;
+              } else {
+                shooter.enemyAtkSpeed = Math.round((shooter.enemyAtkSpeed + 0.1) * 100) / 100;
+              }
+              maxSpawnAmount++; // Increase spawn-rate
+
               // Broadcast kill.
   						for (var i in SOCKET_LIST){
-  							SOCKET_LIST[i].emit('addToChat',shooter.username+' killed '+p.username);
+                SOCKET_LIST[i].emit('addToChat',shooter.username+' killed '+p.username);
   						}
 						} else {
               // Broadcast kill.
@@ -340,6 +363,7 @@ Bullet = function(param){
 				id:self.id,
 				x:self.x,
 				y:self.y,
+        imgid:self.imgid,
 			}
 		}
 		self.getUpdatePack = function(){
@@ -347,6 +371,7 @@ Bullet = function(param){
 				id: self.id,
 				x: self.x,
 				y: self.y,
+        imgid:self.imgid,
 			}
 		}
     Bullet.list[self.id] = self;
@@ -405,7 +430,8 @@ Enemy = function(param){
   self.collDist = 24,
   self.playerfav = param.playerid,
   self.bullSpd = 2,
-  self.maxAtkSpd = 2
+  self.maxAtkSpd = 2,
+  self.bullImg = 1
 
 	var super_update = self.update;
 	// will call both updateSpd and the Enemy update.
@@ -436,6 +462,8 @@ Enemy = function(param){
   		self.pressingDown = diffY > self.collDist;
   		self.pressingUp = diffY < -self.collDist;
       self.pressingAttack = Math.random() >= 0.7; // Randomly press attack. Also depends on attackctr above.
+      self.atkSpd = player.enemyAtkSpeed;
+      self.bullSpd = player.enemyAtkSpeed*4;
       self.mouseAngle = Math.atan2(diffY,diffX) / Math.PI * 180;
     }
 	}
@@ -447,6 +475,7 @@ Enemy = function(param){
 			x:self.x,
 			y:self.y,
       bullSpd:self.bullSpd,
+      imgid:self.bullImg,
 		});
 	}
 
@@ -525,7 +554,7 @@ Enemy.spawnEnemy = function(){
       y:y,
       playerid:playerid,
   	});
-    console.log('will spawn enemy no: '+ Object.keys(Enemy.list).length);
+    // console.log('will spawn enemy no: '+ Object.keys(Enemy.list).length);
     // Announce the arrival of enemy!
   	for (var i in SOCKET_LIST){
   		SOCKET_LIST[i].emit('addToChat',' A terrible '+username+' materializes from the ground.');
@@ -556,6 +585,4 @@ Enemy.update = function(){
 
 	return pack;
 }
-
-
 // End Enemy class

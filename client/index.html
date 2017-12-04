@@ -1,5 +1,5 @@
-<!-- A small world theme game create for Ludum Dare 38 -->
-<!-- Author: Hakan Staby, 2017-Apr-24 -->
+<!-- The more you have, the worse it is theme game create for Ludum Dare 40 -->
+<!-- Author: Hakan Staby, 2017-Dec-03 -->
 
 <div id="signDiv" style="margin:20;">
   <h1>Return of the Evil Veg!</h1>An LD40 entry.
@@ -8,11 +8,12 @@
   <button id="signDiv-signIn">Sign In</button>
   </p>
   <p>
-    The last stand between the Veggies and Fruits takes place in a small clearing in the forest .<br>
-    Kill everyone and everything else to score points.<br>
-    W,A,S,D to move around. Mouse to aim and shoot.<br>
-    Other players give more points than vegetables.<br>
-    Each time you score, something gets worse...<br>
+    <i>The last stand between the Veggies and Fruits is taking<br/>
+    place in a small clearing in the forest.</i><br/><p/>
+    <b>W,A,S,D to move around. Mouse to aim and shoot.</b><br/><p/>
+    Kill everyone and everything else to score points.<br/>
+    Other players give more points than vegetables.<br/><p/>
+    <b>Each time you gain something more, something else gets worse...</b><p/>
     This is a multiplayer online game.
   </p>
 </div>
@@ -21,18 +22,18 @@
   <canvas id="ctx" width="1000" height="600" style="border:1px solid #000000;background:#010101;"></canvas>
 
   <div id="chat-text" style="width:1000px;height:100px;overflow-y:scroll;">
-    <div>Welcome to Lord of the Flies!! Shoot to kill!</div>
+    <div>Welcome to Return of the Evil Veg!! Shoot to kill!</div>
   </div>
   <form id="chat-form">
     <input id="chat-input" type="text" style="width:1000px"></input>
   </form>
-  <!-- div id="audio-ctrls" style="border:0px solid #000000;width:1000px;">
-    <audio id="audioambience" autoplay="" loop="" preload="" onloadeddata="lowerVolume(0.2)">
+  <div id="audio-ctrls" style="border:0px solid #000000;width:1000px;">
+    <audio id="audioambience" autoplay="" loop="" preload="" onloadeddata="lowerVolume(0.5)">
      <source src="/client/sound/ambience.ogg" type="audio/ogg"></source>
      <source src="/client/sound/ambience.mp3" type="audio/mpeg"></source>
      Your browser does not support the audio element.
     </audio>
-  </div -->
+  </div>
 </div>
 
 <!-- <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script> -->
@@ -84,8 +85,11 @@
   var Img = {};
   Img.player = new Image();
   Img.player.src = '/client/img/player_strawberry.png'; // 24x24 pixels
-  Img.bullet = new Image();
-  Img.bullet.src = '/client/img/bullet_sb.png'; // 48x48 pixels
+  Img.bullet = {};
+  Img.bullet[0] = new Image();
+  Img.bullet[0].src = '/client/img/bullet_sb.png'; // 48x48 pixels
+  Img.bullet[1] = new Image();
+  Img.bullet[1].src = '/client/img/bullet_au.png'; // 48x48 pixels
   Img.enemy = new Image();
   Img.enemy.src = '/client/img/enemy_aubergine.png'; // 48x48 pixels
   // Img.map = {};
@@ -105,8 +109,9 @@
   Snd.gun = new Audio();
   Snd.gun.src = '/client/sound/gun.wav';
   Snd.enemykill = new Audio();
-  Snd.enemykill.src = '/client/sound/fallingdown.wav';
-
+  Snd.enemykill.src = '/client/sound/enemykill.wav';
+  Snd.playerkill = new Audio();
+  Snd.playerkill.src = '/client/sound/fallingdown.wav';
   // var mapArray = [
   //         [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],  /// use numbers instead of strings here
   //         [2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2],
@@ -132,6 +137,7 @@
     self.hp = initPack.hp;
     self.hpMax = initPack.hpMax;
     self.score = initPack.score;
+    self.highscore = initPack.highscore;
     self.username = initPack.username;
 
     self.draw = function(){
@@ -193,15 +199,17 @@
     self.id = initPack.id;
     self.x = initPack.x;
     self.y = initPack.y;
+    self.imgid = initPack.imgid;
+
     self.draw = function() {
-      var width = Img.bullet.width/4; //bullet
-      var height = Img.bullet.height/4;
+      var width = Img.bullet[self.imgid].width/4; //bullet
+      var height = Img.bullet[self.imgid].height/4;
       // Center around player
       var x = self.x - Player.list[selfId].x + WIDTH/2;
       var y = self.y - Player.list[selfId].y + HEIGHT/2;
 
-      ctx.drawImage(Img.bullet,
-        0,0,Img.bullet.width,Img.bullet.height,
+      ctx.drawImage(Img.bullet[self.imgid],
+        0,0,Img.bullet[self.imgid].width,Img.bullet[self.imgid].height,
         x-width/2,y-height/2,width,height);
     }
 
@@ -240,6 +248,8 @@
           p.hp = pack.hp;
         if(pack.score !== undefined)
           p.score = pack.score;
+        if(pack.highscore !== undefined)
+          p.highscore = pack.highscore;
         if(pack.atkSpd !== undefined)
           p.atkSpd = pack.atkSpd;
         // if(pack.username !== undefined)
@@ -268,6 +278,8 @@
           b.x = pack.x;
         if(pack.y !== undefined)
           b.y = pack.y;
+        if(pack.imgid !== undefined)
+          b.imgid = pack.imgid;
       }
     }
   });
@@ -290,6 +302,8 @@
       Snd.enemyhit.play();
     else if (data === 'enemykill')
       Snd.enemykill.play();
+    else if (data === 'playerkill')
+      Snd.playerkill.play();
   });
   setInterval(function(){
     if(!selfId) // do nothing until init received
@@ -309,11 +323,11 @@
   var drawScore = function() {
     ctx.fillStyle = 'black';
     ctx.fillText('Score: ' + Player.list[selfId].score,10,30);
-    ctx.fillText('Move spd: ' + Player.list[selfId].score,10,50);
+    ctx.fillText('Best score: ' + Player.list[selfId].highscore,10,50);
     ctx.fillText('Shoot spd: ' + Player.list[selfId].atkSpd*5,10,70);
     ctx.fillStyle = 'white';
     ctx.fillText('Score: ' + Player.list[selfId].score,11,31);
-    ctx.fillText('Move spd: ' + Player.list[selfId].score,11,51);
+    ctx.fillText('Best score: ' + Player.list[selfId].highscore,11,51);
     ctx.fillText('Shoot spd: ' + Player.list[selfId].atkSpd*5,11,71);
     ctx.fillStyle = 'black';
   }

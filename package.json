@@ -1,7 +1,7 @@
 {
-  "name": "ld38",
+  "name": "ld40",
   "version": "1.0.0",
-  "description": "LD38 Small World game",
+  "description": "LD40 The more you have, the worse it is",
   "main": "app.js",
   "dependencies": {
         "express": "^4.15.2",
